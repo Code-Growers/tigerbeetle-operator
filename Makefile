@@ -150,8 +150,8 @@ docker-build: ## Build docker image with the manager.
 docker-push: ## Push docker image with the manager.
 	$(CONTAINER_TOOL) push ${IMG}
 
-# Multi-platform build of the manager image. Releases go through `dagger call publish` instead
-# (see docs/pipelines.md); this target is for building one image by hand.
+# Multi-platform build of the manager image. Releases run the same buildx build from
+# .github/workflows/release.yaml (see docs/pipelines.md); this target is for building by hand.
 # The Dockerfile builds on the native platform and cross-compiles, so no emulation is needed.
 PLATFORMS ?= linux/arm64,linux/amd64
 .PHONY: docker-buildx

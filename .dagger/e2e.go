@@ -25,13 +25,15 @@ var preloadedImages = []string{
 	"prom/statsd-exporter:v0.31.0",
 }
 
-// loadImageScript loads an image tarball into Docker, tags it, and copies it into every kind node.
+// loadImageScript loads an image tarball into Docker, tags it, and copies it into the given kind
+// nodes. Loading into the control plane too would waste disk: kind taints it when the cluster has
+// workers, so no replica pod ever runs there.
 const loadImageScript = `#!/bin/sh
 set -eu
 out=$(docker load -i "$1")
 ref=$(echo "$out" | sed -n 's/^Loaded image\( ID\)\{0,1\}: //p' | tail -n 1)
 docker tag "$ref" "$2"
-kind load docker-image "$2" --name "$3"
+kind load docker-image "$2" --name "$3" --nodes "$4"
 `
 
 // EndToEnd runs test/e2e against a fresh kind cluster.
@@ -97,7 +99,7 @@ func (m *TigerbeetleOperator) EndToEnd(
 		path := "/e2e/images/" + strings.NewReplacer("/", "_", ":", "_").Replace(img.ref) + ".tar"
 		runner = runner.
 			WithFile(path, img.tarball).
-			WithExec([]string{"load-image", path, img.ref, e2eCluster})
+			WithExec([]string{"load-image", path, img.ref, e2eCluster, kindNodes(e2eCluster, workers)})
 	}
 
 	_, err = runner.
@@ -148,4 +150,20 @@ nodes:
 		b.WriteString("  - role: worker\n")
 	}
 	return b.String()
+}
+
+// kindNodes lists the nodes that run workloads, as kind names them.
+func kindNodes(cluster string, workers int) string {
+	if workers == 0 {
+		return cluster + "-control-plane"
+	}
+	nodes := make([]string, 0, workers)
+	for i := range workers {
+		if i == 0 {
+			nodes = append(nodes, cluster+"-worker")
+			continue
+		}
+		nodes = append(nodes, fmt.Sprintf("%s-worker%d", cluster, i+1))
+	}
+	return strings.Join(nodes, ",")
 }

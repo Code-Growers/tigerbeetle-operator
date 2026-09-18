@@ -1,4 +1,9 @@
-# Every job runs a Dagger check, exactly as `make check` / `make test-e2e` do locally.
+# One job runs every check, exactly as `make check` does locally.
+#
+# The checks run in parallel inside a single Dagger engine, so they share its cache: the Go image,
+# module downloads and build cache are fetched once instead of once per check. The cost is that
+# they also share one runner's disk, and the e2e check is hungry: the engine cache, Docker-in-Docker
+# storage, the kind node image and four kind nodes all land on it. Hence the disk steps below.
 name: CI
 
 on:
@@ -19,34 +24,40 @@ env:
   DAGGER_NO_NAG: "1"
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: dagger/dagger-for-github@v8.4.0
-        with:
-          version: ${{ env.DAGGER_VERSION }}
-          check: tigerbeetle-operator:lint
-
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: dagger/dagger-for-github@v8.4.0
-        with:
-          version: ${{ env.DAGGER_VERSION }}
-          check: tigerbeetle-operator:test
-
-  e2e:
+  check:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
-      # A kind control plane and three workers with 2Gi TigerBeetle replicas; the runner's disk
-      # also holds the engine cache, node images and Docker-in-Docker storage.
-      - name: Free disk space
-        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+
+      # Everything this job writes lands under Docker: the Dagger engine's cache volume, and the
+      # Docker-in-Docker storage nested inside it. Drop the preinstalled toolchains nothing here
+      # uses, and put Docker's data root on whichever disk has more room (runner images differ in
+      # how large /mnt is).
+      - name: Make room on the runner
+        run: |
+          df -h / /mnt || true
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup \
+            /usr/share/swift /opt/hostedtoolcache
+          root_free=$(df --output=avail -m / | tail -1)
+          mnt_free=$(df --output=avail -m /mnt 2>/dev/null | tail -1 || echo 0)
+          echo "free after cleanup: / ${root_free}MB, /mnt ${mnt_free}MB"
+          if [ "${mnt_free:-0}" -gt "$root_free" ]; then
+            echo "Moving Docker's data root to /mnt"
+            sudo systemctl stop docker
+            sudo mkdir -p /mnt/docker
+            echo '{"data-root": "/mnt/docker"}' | sudo tee /etc/docker/daemon.json
+            sudo systemctl start docker
+          fi
+          docker system prune --all --force --volumes
+          df -h / /mnt || true
+
       - uses: dagger/dagger-for-github@v8.4.0
         with:
           version: ${{ env.DAGGER_VERSION }}
-          check: tigerbeetle-operator:end-to-end
+          check: "**"
+          enable-github-summary: true
+
+      - name: Disk usage after the run
+        if: always()
+        run: df -h / /mnt
