@@ -1,0 +1,18 @@
+# Single development replica, e.g. for kind. Not for production:
+# development mode skips Direct IO and uses small caches, and one replica has no redundancy.
+apiVersion: tigerbeetle.codegrowers.com/v1alpha1
+kind: TigerBeetleCluster
+metadata:
+  name: tigerbeetle-single
+spec:
+  clusterID: "0"
+  replicas: 1
+  development: true
+  podAntiAffinity: Preferred
+  storage:
+    size: 2Gi
+  resources:
+    requests:
+      cpu: 100m
+    limits:
+      memory: 2Gi

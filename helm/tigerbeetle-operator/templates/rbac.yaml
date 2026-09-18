@@ -1,0 +1,131 @@
+{{- if .Values.serviceAccount.create }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "tigerbeetle-operator.fullname" . }}-manager-role
+  labels:
+    {{- include "tigerbeetle-operator.labels" . | nindent 4 }}
+# Rules come from config/rbac/role.yaml, copied into files/ by `make manifests` (helm-sync).
+rules:
+{{- (.Files.Get "files/role.yaml" | fromYaml).rules | toYaml | nindent 0 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "tigerbeetle-operator.fullname" . }}-manager-rolebinding
+  labels:
+    {{- include "tigerbeetle-operator.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "tigerbeetle-operator.fullname" . }}-manager-role
+subjects:
+- kind: ServiceAccount
+  name: {{ include "tigerbeetle-operator.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "tigerbeetle-operator.fullname" . }}-metrics-reader
+  labels:
+    {{- include "tigerbeetle-operator.labels" . | nindent 4 }}
+rules:
+- nonResourceURLs:
+  - /metrics
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "tigerbeetle-operator.fullname" . }}-leader-election-role
+  labels:
+    {{- include "tigerbeetle-operator.labels" . | nindent 4 }}
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "tigerbeetle-operator.fullname" . }}-leader-election-rolebinding
+  labels:
+    {{- include "tigerbeetle-operator.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "tigerbeetle-operator.fullname" . }}-leader-election-role
+subjects:
+- kind: ServiceAccount
+  name: {{ include "tigerbeetle-operator.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+{{- end }}
+{{- if and .Values.metrics.enabled .Values.metrics.secure }}
+---
+# Secure metrics: the manager checks each scraper's token with a TokenReview and its rights with
+# a SubjectAccessReview, so it needs to create both.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "tigerbeetle-operator.fullname" . }}-metrics-auth-role
+  labels:
+    {{- include "tigerbeetle-operator.labels" . | nindent 4 }}
+rules:
+- apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "tigerbeetle-operator.fullname" . }}-metrics-auth-rolebinding
+  labels:
+    {{- include "tigerbeetle-operator.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "tigerbeetle-operator.fullname" . }}-metrics-auth-role
+subjects:
+- kind: ServiceAccount
+  name: {{ include "tigerbeetle-operator.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+{{- end }}

@@ -1,0 +1,26 @@
+{{- /*
+CRDs live in templates rather than crds/ so that `helm upgrade` applies changes to them;
+Helm installs files in crds/ once and never updates them. Helm's install order still puts
+CustomResourceDefinitions before everything else in this chart.
+*/ -}}
+{{- if .Values.crds.install }}
+{{- range $path, $_ := .Files.Glob "files/crds/*.yaml" }}
+{{- $crd := $.Files.Get $path | fromYaml }}
+---
+apiVersion: {{ $crd.apiVersion }}
+kind: {{ $crd.kind }}
+metadata:
+  name: {{ $crd.metadata.name }}
+  labels:
+    {{- include "tigerbeetle-operator.labels" $ | nindent 4 }}
+  annotations:
+    {{- if $.Values.crds.keep }}
+    "helm.sh/resource-policy": keep
+    {{- end }}
+    {{- with $crd.metadata.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- toYaml $crd.spec | nindent 2 }}
+{{- end }}
+{{- end }}

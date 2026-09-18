@@ -1,0 +1,29 @@
+{{ template "chart.header" . }}
+{{ template "chart.description" . }}
+
+{{ template "chart.versionBadge" . }}{{ template "chart.typeBadge" . }}{{ template "chart.appVersionBadge" . }}
+
+## Install
+
+```sh
+helm install tigerbeetle-operator oci://ghcr.io/code-growers/charts/tigerbeetle-operator \
+  --namespace tigerbeetle-operator-system --create-namespace
+```
+
+The chart installs the `TigerBeetleCluster` CRD as a template, so `helm upgrade` updates it. It
+carries `helm.sh/resource-policy: keep`, so uninstalling the release leaves the CRD and every
+TigerBeetleCluster in place. Set `crds.install=false` when something else manages the CRD.
+
+Upgrading from a release that installed the CRD from the chart's `crds/` directory needs a one-off
+adoption, since Helm only manages resources it knows about:
+
+```sh
+kubectl label crd tigerbeetleclusters.tigerbeetle.codegrowers.com app.kubernetes.io/managed-by=Helm
+kubectl annotate crd tigerbeetleclusters.tigerbeetle.codegrowers.com \
+  meta.helm.sh/release-name=tigerbeetle-operator \
+  meta.helm.sh/release-namespace=tigerbeetle-operator-system
+```
+
+See [docs/operations.md](../../docs/operations.md) for running clusters once the operator is up.
+
+{{ template "chart.valuesSection" . }}

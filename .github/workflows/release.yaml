@@ -1,0 +1,53 @@
+# Publishes the operator image, the init helper image and the Helm chart for a tag, using the same
+# Dagger module the checks use: `dagger call publish` also runs locally against any registry.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish, e.g. v0.2.0"
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  # Must match engineVersion in dagger.json and the CI workflow.
+  DAGGER_VERSION: "0.21.9"
+  DAGGER_NO_NAG: "1"
+  REGISTRY: ghcr.io/code-growers
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dagger/dagger-for-github@v8.4.0
+        with:
+          version: ${{ env.DAGGER_VERSION }}
+          check: "tigerbeetle-operator:lint tigerbeetle-operator:test"
+
+  publish:
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - name: Resolve version
+        id: version
+        run: echo "version=${{ inputs.version || github.ref_name }}" >> "$GITHUB_OUTPUT"
+      - uses: dagger/dagger-for-github@v8.4.0
+        env:
+          REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          version: ${{ env.DAGGER_VERSION }}
+          call: >-
+            publish
+            --registry=${{ env.REGISTRY }}
+            --version=${{ steps.version.outputs.version }}
+            --username=${{ github.actor }}
+            --password=env://REGISTRY_PASSWORD

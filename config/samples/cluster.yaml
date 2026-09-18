@@ -1,0 +1,17 @@
+# Three development replicas, one per node. `make kind-up` creates three workers by default;
+# on a cluster with fewer nodes than replicas, add `podAntiAffinity: Preferred`.
+apiVersion: tigerbeetle.codegrowers.com/v1alpha1
+kind: TigerBeetleCluster
+metadata:
+  name: tigerbeetle-cluster
+spec:
+  clusterID: "0"
+  replicas: 3
+  development: true
+  storage:
+    size: 2Gi
+  resources:
+    requests:
+      cpu: 100m
+    limits:
+      memory: 2Gi

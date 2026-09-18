@@ -1,0 +1,52 @@
+# Every job runs a Dagger check, exactly as `make check` / `make test-e2e` do locally.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Must match engineVersion in dagger.json and the Dagger CLI from flake.nix.
+  DAGGER_VERSION: "0.21.9"
+  DAGGER_NO_NAG: "1"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dagger/dagger-for-github@v8.4.0
+        with:
+          version: ${{ env.DAGGER_VERSION }}
+          check: tigerbeetle-operator:lint
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dagger/dagger-for-github@v8.4.0
+        with:
+          version: ${{ env.DAGGER_VERSION }}
+          check: tigerbeetle-operator:test
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      # A kind control plane and three workers with 2Gi TigerBeetle replicas; the runner's disk
+      # also holds the engine cache, node images and Docker-in-Docker storage.
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+      - uses: dagger/dagger-for-github@v8.4.0
+        with:
+          version: ${{ env.DAGGER_VERSION }}
+          check: tigerbeetle-operator:end-to-end

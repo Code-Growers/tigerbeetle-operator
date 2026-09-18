@@ -1,0 +1,29 @@
+The TigerBeetle Operator has been installed.
+
+1. Verify the operator is running:
+
+   kubectl get deployment {{ include "tigerbeetle-operator.fullname" . }} -n {{ .Release.Namespace }}
+
+2. Create a TigerBeetle cluster:
+
+   kubectl apply -f - <<EOF
+   apiVersion: tigerbeetle.codegrowers.com/v1alpha1
+   kind: TigerBeetleCluster
+   metadata:
+     name: my-tigerbeetle
+   spec:
+     # A random 128-bit decimal integer; generate one with:
+     #   echo "ibase=16; $(openssl rand -hex 16 | tr a-f A-F)" | bc
+     clusterID: "<random u128>"
+     replicas: 1
+     storage:
+       size: 10Gi
+     resources:
+       limits:
+         memory: 8Gi
+   EOF
+
+3. Check the status of your cluster:
+
+   kubectl get tigerbeetleclusters -A
+   kubectl describe tigerbeetlecluster my-tigerbeetle
