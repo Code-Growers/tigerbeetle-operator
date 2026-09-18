@@ -1,10 +1,11 @@
-The TigerBeetle Operator has been installed.
+The TigerBeetle operator is installed in namespace {{ .Release.Namespace }}.
 
-1. Verify the operator is running:
+1. Check that it is running:
 
-   kubectl get deployment {{ include "tigerbeetle-operator.fullname" . }} -n {{ .Release.Namespace }}
+   kubectl -n {{ .Release.Namespace }} rollout status deployment/{{ include "tigerbeetle-operator.fullname" . }}
 
-2. Create a TigerBeetle cluster:
+2. Create a TigerBeetle cluster. The cluster ID, replica count and storage size cannot be changed
+   later; read https://github.com/Code-Growers/tigerbeetle-operator/blob/main/docs/deploying.md first.
 
    kubectl apply -f - <<EOF
    apiVersion: tigerbeetle.codegrowers.com/v1alpha1
@@ -12,18 +13,19 @@ The TigerBeetle Operator has been installed.
    metadata:
      name: my-tigerbeetle
    spec:
-     # A random 128-bit decimal integer; generate one with:
-     #   echo "ibase=16; $(openssl rand -hex 16 | tr a-f A-F)" | bc
+     # A random 128-bit integer, e.g. from: python3 -c 'import secrets; print(secrets.randbits(128))'
      clusterID: "<random u128>"
-     replicas: 1
+     replicas: 3
      storage:
        size: 10Gi
      resources:
+       requests:
+         cpu: "1"
        limits:
-         memory: 8Gi
+         memory: 8Gi   # 5GiB of it becomes TigerBeetle's grid cache
    EOF
 
-3. Check the status of your cluster:
+3. Watch it come up, then point clients at the published addresses:
 
-   kubectl get tigerbeetleclusters -A
-   kubectl describe tigerbeetlecluster my-tigerbeetle
+   kubectl get tigerbeetlecluster my-tigerbeetle -w
+   kubectl get configmap my-tigerbeetle-config -o yaml

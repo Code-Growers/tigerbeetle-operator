@@ -29,3 +29,4 @@ go.work
 .direnv
 
 tilt_config.json
+book/

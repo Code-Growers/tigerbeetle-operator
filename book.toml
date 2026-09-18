@@ -1,0 +1,22 @@
+# Documentation site, built with mdBook from docs/ (`make docs`, `make docs-serve`) and published to
+# GitHub Pages by .github/workflows/docs.yaml.
+[book]
+title = "TigerBeetle Operator"
+authors = ["Code Growers"]
+language = "en"
+src = "docs"
+
+[build]
+build-dir = "book"
+
+[output.html]
+git-repository-url = "https://github.com/Code-Growers/tigerbeetle-operator"
+edit-url-template = "https://github.com/Code-Growers/tigerbeetle-operator/edit/main/{path}"
+# GitHub Pages serves project sites under /<repository>/; the 404 page needs it for its links.
+site-url = "/tigerbeetle-operator/"
+default-theme = "light"
+preferred-dark-theme = "navy"
+no-section-label = true
+
+[output.html.search]
+enable = true

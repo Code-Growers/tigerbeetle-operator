@@ -55,6 +55,14 @@ helm-sync: ## Copy generated CRDs and RBAC rules into the Helm chart.
 	cp config/crd/bases/*.yaml $(HELM_CHART)/files/crds/
 	cp config/rbac/role.yaml $(HELM_CHART)/files/role.yaml
 
+.PHONY: docs
+docs: ## Build the documentation site into book/ (mdBook).
+	$(MDBOOK) build
+
+.PHONY: docs-serve
+docs-serve: ## Serve the documentation site on localhost:3000, rebuilding on changes.
+	$(MDBOOK) serve --open
+
 .PHONY: helm-docs
 helm-docs: ## Regenerate the Helm chart README from values.yaml.
 	$(HELM_DOCS) --chart-search-root=$(HELM_CHART) --template-files=README.md.gotmpl
@@ -206,6 +214,7 @@ KIND ?= kind
 TILT ?= tilt
 HELM ?= helm
 HELM_DOCS ?= helm-docs
+MDBOOK ?= mdbook
 DAGGER ?= dagger
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
