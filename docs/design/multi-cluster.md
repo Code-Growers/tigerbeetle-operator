@@ -1,4 +1,6 @@
-# Multi-cluster TigerBeetle: research notes (undecided)
+---
+title: "Multi-cluster TigerBeetle: research notes (undecided)"
+---
 
 Status: **open**. Parked on 2026-09-15; revisit before Phase 4. Nothing here is implemented.
 

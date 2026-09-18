@@ -1,4 +1,6 @@
-# Connecting applications
+---
+title: "Connecting applications"
+---
 
 A TigerBeetle client needs two things: the **cluster ID** and the **addresses of every replica**, in
 replica order. The operator publishes both.

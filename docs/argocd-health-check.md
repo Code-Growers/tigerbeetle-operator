@@ -1,4 +1,6 @@
-# Argo CD health check
+---
+title: "Argo CD health check"
+---
 
 Argo CD has no built-in health assessment for `TigerBeetleCluster`, so without this check a
 failing cluster never shows as Degraded. The operator reports health through kstatus-compatible

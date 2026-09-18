@@ -1,4 +1,6 @@
-# Pipelines
+---
+title: "Pipelines"
+---
 
 The pipelines are a [Dagger](https://dagger.io) module in `.dagger/` (Go SDK). The same checks run on
 a laptop and in CI, so a green `make check` means a green CI run.
@@ -97,15 +99,24 @@ build with a warm cache is instant; the cache is what the CI job leans on.
 
 ## Documentation site
 
-The pages in `docs/` are also a site, built with [mdBook](https://rust-lang.github.io/mdBook/)
-(`book.toml`; navigation in `docs/SUMMARY.md`). `make docs-serve` serves it locally with live reload;
-`make docs` builds it into `book/`.
+The pages in `docs/` are also a site, built with [Starlight](https://starlight.astro.build/) (Astro)
+from the project in `site/`. `make docs-serve` serves it with live reload at
+<http://localhost:4321/tigerbeetle-operator/>; `make docs` builds it into `site/dist/`. Both need Node,
+which the Nix shell provides.
 
-- `docs/introduction.md` includes the top of `README.md`, and `docs/chart-values.md` includes the
-  values table from the chart README, through mdBook anchors (`<!-- ANCHOR: ... -->`), so neither is
-  written twice.
-- `.github/workflows/docs.yaml` builds the site on pull requests that touch the docs, checks every
-  internal link with [lychee](https://lychee.cli.rs/) (a broken link fails the build), and deploys it
-  to GitHub Pages from `main`. External links are not checked, so an unreachable third-party site
-  never blocks the docs.
-- A page only appears in the site once it is listed in `docs/SUMMARY.md`.
+- **The pages stay in `docs/`**, readable on GitHub at the same paths. The site loads them with
+  Astro's `glob` loader (`site/src/content.config.ts`), the same pattern Starlight's own loader uses
+  for `src/content/docs/`. Each page needs a `title` in its front matter; Starlight renders it as the
+  heading, so pages do not repeat it as a `#` heading.
+- **Links between pages are written as relative `.md` links** (`[Operations](operations.md#upgrades)`)
+  so they work on GitHub. `site/src/plugins/remark-md-links.mjs` rewrites them into site routes.
+- **The landing page** (`site/src/pages/index.astro`) lives in the site, not in `docs/`: it uses
+  Starlight components, which files outside `site/` cannot import.
+- **`docs/chart-values.md` is generated** from the chart's `values.yaml` by `make helm-docs`.
+- **Navigation** is the `sidebar` in `site/astro.config.mjs`: a new page only appears there once it is
+  listed.
+- `.github/workflows/docs.yaml` builds the site on pull requests that touch `docs/` or `site/`,
+  checks every internal link and `#anchor` with [lychee](https://lychee.cli.rs/) (a broken link fails
+  the build), and deploys to GitHub Pages from `main`. External links are not checked, so an
+  unreachable third-party site never blocks the docs. (`starlight-links-validator` cannot be used:
+  it derives routes from paths under `src/content/docs/`.)

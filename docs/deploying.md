@@ -1,4 +1,6 @@
-# Deploying a TigerBeetle cluster
+---
+title: "Deploying a TigerBeetle cluster"
+---
 
 How to size and create a `TigerBeetleCluster`. Several decisions here cannot be changed later,
 because TigerBeetle writes them into every data file: read the whole page before creating one.

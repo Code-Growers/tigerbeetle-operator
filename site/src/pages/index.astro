@@ -1,0 +1,70 @@
+---
+// The landing page. It lives in the site rather than in docs/ because it uses Starlight
+// components, which pages outside this project cannot import; docs/ stays plain Markdown.
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { Aside, Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+const url = (path: string) => `${import.meta.env.BASE_URL.replace(/\/$/, '')}/${path}`;
+---
+
+<StarlightPage
+  frontmatter={{
+    title: 'TigerBeetle Operator',
+    description: 'Run TigerBeetle clusters on Kubernetes, safely.',
+    template: 'splash',
+    hero: {
+      tagline:
+        'Formats and places the replicas, keeps their addresses stable, recovers lost replicas, ' +
+        'rolls upgrades, and reports every problem on the resource itself.',
+      actions: [
+        { text: 'Install the operator', link: url('installation/'), icon: 'right-arrow' },
+        { text: 'Plan a cluster', link: url('deploying/'), variant: 'minimal' },
+      ],
+    },
+  }}
+>
+  <Aside type="caution" title="Alpha">
+    The API is <code>tigerbeetle.codegrowers.com/v1alpha1</code> and may change between releases
+    without a migration path.
+  </Aside>
+
+  <h2>What it does</h2>
+  <CardGrid>
+    <Card title="Safe bootstrap" icon="approve-check">
+      Data files are formatted exactly once. The operator refuses to format volumes that might
+      already hold data, and asks before adopting them.
+    </Card>
+    <Card title="Stable addresses" icon="random">
+      One ClusterIP Service per replica keeps TigerBeetle's IP-only address list stable across pod
+      moves, published for clients in a ConfigMap.
+    </Card>
+    <Card title="Recovery" icon="rocket">
+      A replica that lost its data file rebuilds it from the others with <code>tigerbeetle recover</code>,
+      automatically or after a human approves.
+    </Card>
+    <Card title="Rolling upgrades" icon="up-arrow">
+      Change the image; replicas roll one at a time behind a PodDisruptionBudget that protects the
+      quorum.
+    </Card>
+    <Card title="Observable" icon="warning">
+      Crash loops, image pulls and scheduling failures become Warning events and kstatus
+      conditions; optional Prometheus metrics come from a <code>statsd_exporter</code> sidecar.
+    </Card>
+    <Card title="Sidecars" icon="puzzle">
+      Add any container next to TigerBeetle, for example a VPN or a service mesh proxy.
+    </Card>
+  </CardGrid>
+
+  <p>
+    Not supported: growing or shrinking a cluster (TigerBeetle fixes the replica count at format
+    time), resizing volumes, and spanning several Kubernetes clusters.
+  </p>
+
+  <h2>Where to start</h2>
+  <CardGrid>
+    <LinkCard title="Install the operator" href={url('installation/')} description="Helm install, upgrade and uninstall." />
+    <LinkCard title="Deploy a cluster" href={url('deploying/')} description="Sizing, and the choices you cannot change later." />
+    <LinkCard title="Connect applications" href={url('clients/')} description="The addresses and cluster ID clients need." />
+    <LinkCard title="Operate it" href={url('operations/')} description="Every condition and event, recovery, upgrades." />
+  </CardGrid>
+</StarlightPage>

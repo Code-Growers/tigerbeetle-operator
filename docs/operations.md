@@ -1,4 +1,6 @@
-# Operating a TigerBeetleCluster
+---
+title: "Operating a TigerBeetleCluster"
+---
 
 How the operator reports problems, and what it expects from you when it needs a decision.
 

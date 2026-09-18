@@ -29,4 +29,6 @@ go.work
 .direnv
 
 tilt_config.json
-book/
+site/node_modules/
+site/dist/
+site/.astro/

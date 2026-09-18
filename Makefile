@@ -56,16 +56,18 @@ helm-sync: ## Copy generated CRDs and RBAC rules into the Helm chart.
 	cp config/rbac/role.yaml $(HELM_CHART)/files/role.yaml
 
 .PHONY: docs
-docs: ## Build the documentation site into book/ (mdBook).
-	$(MDBOOK) build
+docs: ## Build the documentation site into site/dist (Astro + Starlight).
+	cd site && $(NPM) ci && $(NPM) run build
 
 .PHONY: docs-serve
-docs-serve: ## Serve the documentation site on localhost:3000, rebuilding on changes.
-	$(MDBOOK) serve --open
+docs-serve: ## Serve the documentation site with live reload (http://localhost:4321/tigerbeetle-operator/).
+	cd site && $(NPM) ci && $(NPM) run dev
 
 .PHONY: helm-docs
-helm-docs: ## Regenerate the Helm chart README from values.yaml.
+helm-docs: ## Regenerate the chart README and the docs values page from values.yaml.
 	$(HELM_DOCS) --chart-search-root=$(HELM_CHART) --template-files=README.md.gotmpl
+	$(HELM_DOCS) --chart-search-root=$(HELM_CHART) --template-files=docs-values.md.gotmpl \
+		--output-file=../../docs/chart-values.md
 
 .PHONY: generate
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
@@ -214,7 +216,7 @@ KIND ?= kind
 TILT ?= tilt
 HELM ?= helm
 HELM_DOCS ?= helm-docs
-MDBOOK ?= mdbook
+NPM ?= npm
 DAGGER ?= dagger
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen

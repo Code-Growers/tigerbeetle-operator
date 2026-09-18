@@ -1,5 +1,6 @@
-# Builds the documentation site with mdBook and publishes it to GitHub Pages. Pull requests only
-# build it and check its links, so a broken link fails before it is published.
+# Builds the documentation site (Astro + Starlight, in site/, rendering the Markdown in docs/) and
+# publishes it to GitHub Pages. Pull requests only build it and check its links, so a broken link
+# fails before it is published.
 name: Docs
 
 on:
@@ -7,16 +8,12 @@ on:
     branches: [main]
     paths:
       - "docs/**"
-      - "book.toml"
-      - "README.md"
-      - "helm/tigerbeetle-operator/README.md"
+      - "site/**"
       - ".github/workflows/docs.yaml"
   pull_request:
     paths:
       - "docs/**"
-      - "book.toml"
-      - "README.md"
-      - "helm/tigerbeetle-operator/README.md"
+      - "site/**"
       - ".github/workflows/docs.yaml"
   workflow_dispatch:
 
@@ -27,37 +24,43 @@ concurrency:
   group: docs-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  # Keep in line with the mdbook package in flake.nix.
-  MDBOOK_VERSION: "0.5.2"
-
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-node@v5
+        with:
+          # Keep in line with the nodejs package in flake.nix.
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: site/package-lock.json
 
-      - name: Install mdBook
+      - run: npm ci
+      - run: npm run build
+
+      # Pages link to each other by absolute path under the site's base (/tigerbeetle-operator/),
+      # so the check resolves them against a directory that places dist/ at that path.
+      - name: Prepare link check
         run: |
-          url="https://github.com/rust-lang/mdBook/releases/download/v${MDBOOK_VERSION}/mdbook-v${MDBOOK_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
-          mkdir -p "$HOME/.local/bin"
-          curl -sSfL "$url" | tar -xz -C "$HOME/.local/bin"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
-      - name: Build
-        run: mdbook build
-
-      # Internal links only (--offline): external sites being down should not block the docs.
-      # 404.html links to the site root by absolute path, which only exists once deployed.
+          mkdir -p "$RUNNER_TEMP/site-root"
+          ln -s "$PWD/dist" "$RUNNER_TEMP/site-root/tigerbeetle-operator"
+      # Internal links and #fragments only (--offline): external sites being down must not block
+      # the docs.
       - name: Check links
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --offline --no-progress --exclude-path book/404.html 'book/**/*.html'
+          args: >-
+            --offline --no-progress --include-fragments --index-files index.html
+            --root-dir ${{ runner.temp }}/site-root 'site/dist/**/*.html'
           fail: true
 
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: book
+          path: site/dist
 
   deploy:
     if: github.event_name != 'pull_request'

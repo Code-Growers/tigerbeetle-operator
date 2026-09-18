@@ -1,4 +1,6 @@
-# Installing the operator
+---
+title: "Installing the operator"
+---
 
 The operator is distributed as a Helm chart, published as an OCI artifact next to its images.
 

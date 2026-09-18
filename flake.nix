@@ -51,7 +51,7 @@
               pkgs.kubernetes-helm
               pkgs.helm-docs
               pkgs.helmfile
-              pkgs.mdbook # docs site (docs/, book.toml)
+              pkgs.nodejs # docs site (site/, Astro + Starlight)
 
               # Pipelines (local and CI)
               inputs'.dagger.packages.dagger

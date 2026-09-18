@@ -27,7 +27,6 @@ kubectl annotate crd tigerbeetleclusters.tigerbeetle.codegrowers.com \
 
 See [docs/operations.md](../../docs/operations.md) for running clusters once the operator is up.
 
-<!-- ANCHOR: values -->
 ## Values
 
 | Key | Type | Default | Description |
@@ -66,4 +65,3 @@ See [docs/operations.md](../../docs/operations.md) for running clusters once the
 | serviceAccount.create | bool | `true` | Create a ServiceAccount and the operator's RBAC. |
 | serviceAccount.name | string | `""` | ServiceAccount name. Generated when empty. |
 | tolerations | list | `[]` | Tolerations for the operator pod. |
-<!-- ANCHOR_END: values -->
